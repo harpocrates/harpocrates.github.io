@@ -1,0 +1,184 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE Trustworthy #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE NoImplicitPrelude
+           , ExistentialQuantification
+           , MagicHash
+           , RecordWildCards
+           , PatternSynonyms
+  #-}</span><span>
+</span><a name="line-8"></a><span class="hs-pragma">{-# OPTIONS_HADDOCK hide #-}</span><span>
+</span><a name="line-9"></a><span>
+</span><a name="line-10"></a><span class="hs-comment">-----------------------------------------------------------------------------</span><span>
+</span><a name="line-11"></a><span class="hs-comment">-- |</span><span>
+</span><a name="line-12"></a><span class="hs-comment">-- Module      :  GHC.Exception.Type</span><span>
+</span><a name="line-13"></a><span class="hs-comment">-- Copyright   :  (c) The University of Glasgow, 1998-2002</span><span>
+</span><a name="line-14"></a><span class="hs-comment">-- License     :  see libraries/base/LICENSE</span><span>
+</span><a name="line-15"></a><span class="hs-comment">--</span><span>
+</span><a name="line-16"></a><span class="hs-comment">-- Maintainer  :  cvs-ghc@haskell.org</span><span>
+</span><a name="line-17"></a><span class="hs-comment">-- Stability   :  internal</span><span>
+</span><a name="line-18"></a><span class="hs-comment">-- Portability :  non-portable (GHC extensions)</span><span>
+</span><a name="line-19"></a><span class="hs-comment">--</span><span>
+</span><a name="line-20"></a><span class="hs-comment">-- Exceptions and exception-handling functions.</span><span>
+</span><a name="line-21"></a><span class="hs-comment">--</span><span>
+</span><a name="line-22"></a><span class="hs-comment">-----------------------------------------------------------------------------</span><span>
+</span><a name="line-23"></a><span>
+</span><a name="line-24"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">GHC.Exception.Type</span><span>
+</span><a name="line-25"></a><span>       </span><span class="hs-special">(</span><span> </span><a href="GHC.Exception.Type.html#Exception"><span class="hs-identifier hs-type">Exception</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>    </span><span class="hs-comment">-- Class</span><span>
+</span><a name="line-26"></a><span>       </span><span class="hs-special">,</span><span> </span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-type">SomeException</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><a href="GHC.Exception.Type.html#ArithException"><span class="hs-identifier hs-type">ArithException</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-27"></a><span>       </span><span class="hs-special">,</span><span> </span><a href="GHC.Exception.Type.html#divZeroException"><span class="hs-identifier hs-var">divZeroException</span></a><span class="hs-special">,</span><span> </span><a href="GHC.Exception.Type.html#overflowException"><span class="hs-identifier hs-var">overflowException</span></a><span class="hs-special">,</span><span> </span><a href="GHC.Exception.Type.html#ratioZeroDenomException"><span class="hs-identifier hs-var">ratioZeroDenomException</span></a><span>
+</span><a name="line-28"></a><span>       </span><span class="hs-special">,</span><span> </span><a href="GHC.Exception.Type.html#underflowException"><span class="hs-identifier hs-var">underflowException</span></a><span>
+</span><a name="line-29"></a><span>       </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-30"></a><span>
+</span><a name="line-31"></a><span class="hs-keyword">import</span><span> </span><a href="Data.Maybe.html"><span class="hs-identifier">Data.Maybe</span></a><span>
+</span><a name="line-32"></a><span class="hs-keyword">import</span><span> </span><a href="Data.Typeable.html"><span class="hs-identifier">Data.Typeable</span></a><span> </span><span class="hs-special">(</span><a href="Data.Typeable.Internal.html#Typeable"><span class="hs-identifier hs-type">Typeable</span></a><span class="hs-special">,</span><span> </span><a href="Data.Typeable.html#cast"><span class="hs-identifier hs-var">cast</span></a><span class="hs-special">)</span><span>
+</span><a name="line-33"></a><span>   </span><span class="hs-comment">-- loop: Data.Typeable -&gt; GHC.Err -&gt; GHC.Exception</span><span>
+</span><a name="line-34"></a><span class="hs-keyword">import</span><span> </span><a href="GHC.Base.html"><span class="hs-identifier">GHC.Base</span></a><span>
+</span><a name="line-35"></a><span class="hs-keyword">import</span><span> </span><a href="GHC.Show.html"><span class="hs-identifier">GHC.Show</span></a><span>
+</span><a name="line-36"></a><span>
+</span><a name="line-37"></a><span class="hs-comment">{- |
+The @SomeException@ type is the root of the exception type hierarchy.
+When an exception of type @e@ is thrown, behind the scenes it is
+encapsulated in a @SomeException@.
+-}</span><span>
+</span><a name="line-42"></a><span class="hs-keyword">data</span><span> </span><a name="SomeException"><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier">SomeException</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-6989586621679245416"><a href="#local-6989586621679245416"><span class="hs-identifier">e</span></a></a><span> </span><span class="hs-operator">.</span><span> </span><a href="GHC.Exception.Type.html#Exception"><span class="hs-identifier hs-type">Exception</span></a><span> </span><a href="#local-6989586621679245416"><span class="hs-identifier hs-type">e</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a name="SomeException"><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier">SomeException</span></a></a><span> </span><a href="#local-6989586621679245416"><span class="hs-identifier hs-type">e</span></a><span>
+</span><a name="line-43"></a><span>
+</span><a name="line-44"></a><span class="hs-comment">-- | @since 3.0</span><span>
+</span><a name="line-45"></a><span class="hs-keyword">instance</span><span> </span><a href="GHC.Show.html#Show"><span class="hs-identifier hs-type">Show</span></a><span> </span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-type">SomeException</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-46"></a><span>    </span><a name="local-8214565720323809474"><a href="GHC.Show.html#showsPrec"><span class="hs-identifier">showsPrec</span></a></a><span> </span><a name="local-6989586621679245419"><a href="#local-6989586621679245419"><span class="hs-identifier">p</span></a></a><span> </span><span class="hs-special">(</span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-var">SomeException</span></a><span> </span><a name="local-6989586621679245420"><a href="#local-6989586621679245420"><span class="hs-identifier">e</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#showsPrec"><span class="hs-identifier hs-var">showsPrec</span></a><span> </span><a href="#local-6989586621679245419"><span class="hs-identifier hs-var">p</span></a><span> </span><a href="#local-6989586621679245420"><span class="hs-identifier hs-var">e</span></a><span>
+</span><a name="line-47"></a><span>
+</span><a name="line-48"></a><span class="hs-comment">{- |
+Any type that you wish to throw or catch as an exception must be an
+instance of the @Exception@ class. The simplest case is a new exception
+type directly below the root:
+
+&gt; data MyException = ThisException | ThatException
+&gt;     deriving Show
+&gt;
+&gt; instance Exception MyException
+
+The default method definitions in the @Exception@ class do what we need
+in this case. You can now throw and catch @ThisException@ and
+@ThatException@ as exceptions:
+
+@
+*Main&gt; throw ThisException \`catch\` \\e -&gt; putStrLn (\&quot;Caught \&quot; ++ show (e :: MyException))
+Caught ThisException
+@
+
+In more complicated examples, you may wish to define a whole hierarchy
+of exceptions:
+
+&gt; ---------------------------------------------------------------------
+&gt; -- Make the root exception type for all the exceptions in a compiler
+&gt;
+&gt; data SomeCompilerException = forall e . Exception e =&gt; SomeCompilerException e
+&gt;
+&gt; instance Show SomeCompilerException where
+&gt;     show (SomeCompilerException e) = show e
+&gt;
+&gt; instance Exception SomeCompilerException
+&gt;
+&gt; compilerExceptionToException :: Exception e =&gt; e -&gt; SomeException
+&gt; compilerExceptionToException = toException . SomeCompilerException
+&gt;
+&gt; compilerExceptionFromException :: Exception e =&gt; SomeException -&gt; Maybe e
+&gt; compilerExceptionFromException x = do
+&gt;     SomeCompilerException a &lt;- fromException x
+&gt;     cast a
+&gt;
+&gt; ---------------------------------------------------------------------
+&gt; -- Make a subhierarchy for exceptions in the frontend of the compiler
+&gt;
+&gt; data SomeFrontendException = forall e . Exception e =&gt; SomeFrontendException e
+&gt;
+&gt; instance Show SomeFrontendException where
+&gt;     show (SomeFrontendException e) = show e
+&gt;
+&gt; instance Exception SomeFrontendException where
+&gt;     toException = compilerExceptionToException
+&gt;     fromException = compilerExceptionFromException
+&gt;
+&gt; frontendExceptionToException :: Exception e =&gt; e -&gt; SomeException
+&gt; frontendExceptionToException = toException . SomeFrontendException
+&gt;
+&gt; frontendExceptionFromException :: Exception e =&gt; SomeException -&gt; Maybe e
+&gt; frontendExceptionFromException x = do
+&gt;     SomeFrontendException a &lt;- fromException x
+&gt;     cast a
+&gt;
+&gt; ---------------------------------------------------------------------
+&gt; -- Make an exception type for a particular frontend compiler exception
+&gt;
+&gt; data MismatchedParentheses = MismatchedParentheses
+&gt;     deriving Show
+&gt;
+&gt; instance Exception MismatchedParentheses where
+&gt;     toException   = frontendExceptionToException
+&gt;     fromException = frontendExceptionFromException
+
+We can now catch a @MismatchedParentheses@ exception as
+@MismatchedParentheses@, @SomeFrontendException@ or
+@SomeCompilerException@, but not other types, e.g. @IOException@:
+
+@
+*Main&gt; throw MismatchedParentheses \`catch\` \\e -&gt; putStrLn (\&quot;Caught \&quot; ++ show (e :: MismatchedParentheses))
+Caught MismatchedParentheses
+*Main&gt; throw MismatchedParentheses \`catch\` \\e -&gt; putStrLn (\&quot;Caught \&quot; ++ show (e :: SomeFrontendException))
+Caught MismatchedParentheses
+*Main&gt; throw MismatchedParentheses \`catch\` \\e -&gt; putStrLn (\&quot;Caught \&quot; ++ show (e :: SomeCompilerException))
+Caught MismatchedParentheses
+*Main&gt; throw MismatchedParentheses \`catch\` \\e -&gt; putStrLn (\&quot;Caught \&quot; ++ show (e :: IOException))
+*** Exception: MismatchedParentheses
+@
+
+-}</span><span>
+</span><a name="line-134"></a><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><a href="Data.Typeable.Internal.html#Typeable"><span class="hs-identifier hs-type">Typeable</span></a><span> </span><a href="#local-6989586621679245414"><span class="hs-identifier hs-type">e</span></a><span class="hs-special">,</span><span> </span><a href="GHC.Show.html#Show"><span class="hs-identifier hs-type">Show</span></a><span> </span><a href="#local-6989586621679245414"><span class="hs-identifier hs-type">e</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><a name="Exception"><a href="GHC.Exception.Type.html#Exception"><span class="hs-identifier">Exception</span></a></a><span> </span><a name="local-6989586621679245414"><a href="#local-6989586621679245414"><span class="hs-identifier">e</span></a></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-135"></a><span>    </span><a name="toException"><a href="GHC.Exception.Type.html#toException"><span class="hs-identifier">toException</span></a></a><span>   </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679245414"><span class="hs-identifier hs-type">e</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-type">SomeException</span></a><span>
+</span><a name="line-136"></a><span>    </span><a name="fromException"><a href="GHC.Exception.Type.html#fromException"><span class="hs-identifier">fromException</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-type">SomeException</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="GHC.Maybe.html#Maybe"><span class="hs-identifier hs-type">Maybe</span></a><span> </span><a href="#local-6989586621679245414"><span class="hs-identifier hs-type">e</span></a><span>
+</span><a name="line-137"></a><span>
+</span><a name="line-138"></a><span>    </span><a name="local-8214565720324020321"><a href="GHC.Exception.Type.html#toException"><span class="hs-identifier">toException</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-var">SomeException</span></a><span>
+</span><a name="line-139"></a><span>    </span><a name="local-8214565720324020322"><a href="GHC.Exception.Type.html#fromException"><span class="hs-identifier">fromException</span></a></a><span> </span><span class="hs-special">(</span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-var">SomeException</span></a><span> </span><a name="local-6989586621679245415"><a href="#local-6989586621679245415"><span class="hs-identifier">e</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.Typeable.html#cast"><span class="hs-identifier hs-var">cast</span></a><span> </span><a href="#local-6989586621679245415"><span class="hs-identifier hs-var">e</span></a><span>
+</span><a name="line-140"></a><span>
+</span><a name="line-141"></a><span>    </span><span class="hs-comment">-- | Render this exception value in a human-friendly manner.</span><span>
+</span><a name="line-142"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-143"></a><span>    </span><span class="hs-comment">-- Default implementation: @'show'@.</span><span>
+</span><a name="line-144"></a><span>    </span><span class="hs-comment">--</span><span>
+</span><a name="line-145"></a><span>    </span><span class="hs-comment">-- @since 4.8.0.0</span><span>
+</span><a name="line-146"></a><span>    </span><a name="displayException"><a href="GHC.Exception.Type.html#displayException"><span class="hs-identifier">displayException</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679245414"><span class="hs-identifier hs-type">e</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="GHC.Base.html#String"><span class="hs-identifier hs-type">String</span></a><span>
+</span><a name="line-147"></a><span>    </span><a name="local-8214565720324020323"><a href="GHC.Exception.Type.html#displayException"><span class="hs-identifier">displayException</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#show"><span class="hs-identifier hs-var">show</span></a><span>
+</span><a name="line-148"></a><span>
+</span><a name="line-149"></a><span class="hs-comment">-- | @since 3.0</span><span>
+</span><a name="line-150"></a><span class="hs-keyword">instance</span><span> </span><a href="GHC.Exception.Type.html#Exception"><span class="hs-identifier hs-type">Exception</span></a><span> </span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-type">SomeException</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-151"></a><span>    </span><a name="local-8214565720324020321"><a href="GHC.Exception.Type.html#toException"><span class="hs-identifier">toException</span></a></a><span> </span><a name="local-6989586621679245417"><a href="#local-6989586621679245417"><span class="hs-identifier">se</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679245417"><span class="hs-identifier hs-var">se</span></a><span>
+</span><a name="line-152"></a><span>    </span><a name="local-8214565720324020322"><a href="GHC.Exception.Type.html#fromException"><span class="hs-identifier">fromException</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Maybe.html#Just"><span class="hs-identifier hs-var">Just</span></a><span>
+</span><a name="line-153"></a><span>    </span><a name="local-8214565720324020323"><a href="GHC.Exception.Type.html#displayException"><span class="hs-identifier">displayException</span></a></a><span> </span><span class="hs-special">(</span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-var">SomeException</span></a><span> </span><a name="local-6989586621679245418"><a href="#local-6989586621679245418"><span class="hs-identifier">e</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Exception.Type.html#displayException"><span class="hs-identifier hs-var">displayException</span></a><span> </span><a href="#local-6989586621679245418"><span class="hs-identifier hs-var">e</span></a><span>
+</span><a name="line-154"></a><span>
+</span><a name="line-155"></a><span class="hs-comment">-- |Arithmetic exceptions.</span><span>
+</span><a name="line-156"></a><span class="hs-keyword">data</span><span> </span><a name="ArithException"><a href="GHC.Exception.Type.html#ArithException"><span class="hs-identifier">ArithException</span></a></a><span>
+</span><a name="line-157"></a><span>  </span><span class="hs-glyph">=</span><span> </span><a name="Overflow"><a href="GHC.Exception.Type.html#Overflow"><span class="hs-identifier">Overflow</span></a></a><span>
+</span><a name="line-158"></a><span>  </span><span class="hs-glyph">|</span><span> </span><a name="Underflow"><a href="GHC.Exception.Type.html#Underflow"><span class="hs-identifier">Underflow</span></a></a><span>
+</span><a name="line-159"></a><span>  </span><span class="hs-glyph">|</span><span> </span><a name="LossOfPrecision"><a href="GHC.Exception.Type.html#LossOfPrecision"><span class="hs-identifier">LossOfPrecision</span></a></a><span>
+</span><a name="line-160"></a><span>  </span><span class="hs-glyph">|</span><span> </span><a name="DivideByZero"><a href="GHC.Exception.Type.html#DivideByZero"><span class="hs-identifier">DivideByZero</span></a></a><span>
+</span><a name="line-161"></a><span>  </span><span class="hs-glyph">|</span><span> </span><a name="Denormal"><a href="GHC.Exception.Type.html#Denormal"><span class="hs-identifier">Denormal</span></a></a><span>
+</span><a name="line-162"></a><span>  </span><span class="hs-glyph">|</span><span> </span><a name="RatioZeroDenominator"><a href="GHC.Exception.Type.html#RatioZeroDenominator"><span class="hs-identifier">RatioZeroDenominator</span></a></a><span> </span><span class="hs-comment">-- ^ @since 4.6.0.0</span><span>
+</span><a name="line-163"></a><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span> </span><a href="../ghc-prim/src/%{MODULE}.html#%{NAME}/GHC.Classes.html#Eq"><span class="hs-identifier hs-type">Eq</span></a><span>  </span><span class="hs-comment">-- ^ @since 3.0</span><span>
+</span><a name="line-164"></a><span>           </span><span class="hs-special">,</span><span> </span><a href="../ghc-prim/src/%{MODULE}.html#%{NAME}/GHC.Classes.html#Ord"><span class="hs-identifier hs-type">Ord</span></a><span> </span><span class="hs-comment">-- ^ @since 3.0</span><span>
+</span><a name="line-165"></a><span>           </span><span class="hs-special">)</span><span>
+</span><a name="line-166"></a><span>
+</span><a name="line-167"></a><span class="hs-identifier">divZeroException</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">overflowException</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">ratioZeroDenomException</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">underflowException</span><span>  </span><span class="hs-glyph">::</span><span> </span><a href="GHC.Exception.Type.html#SomeException"><span class="hs-identifier hs-type">SomeException</span></a><span>
+</span><a name="line-168"></a><a name="divZeroException"><a href="GHC.Exception.Type.html#divZeroException"><span class="hs-identifier">divZeroException</span></a></a><span>        </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Exception.Type.html#toException"><span class="hs-identifier hs-var">toException</span></a><span> </span><a href="GHC.Exception.Type.html#DivideByZero"><span class="hs-identifier hs-var">DivideByZero</span></a><span>
+</span><a name="line-169"></a><a name="overflowException"><a href="GHC.Exception.Type.html#overflowException"><span class="hs-identifier">overflowException</span></a></a><span>       </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Exception.Type.html#toException"><span class="hs-identifier hs-var">toException</span></a><span> </span><a href="GHC.Exception.Type.html#Overflow"><span class="hs-identifier hs-var">Overflow</span></a><span>
+</span><a name="line-170"></a><a name="ratioZeroDenomException"><a href="GHC.Exception.Type.html#ratioZeroDenomException"><span class="hs-identifier">ratioZeroDenomException</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Exception.Type.html#toException"><span class="hs-identifier hs-var">toException</span></a><span> </span><a href="GHC.Exception.Type.html#RatioZeroDenominator"><span class="hs-identifier hs-var">RatioZeroDenominator</span></a><span>
+</span><a name="line-171"></a><a name="underflowException"><a href="GHC.Exception.Type.html#underflowException"><span class="hs-identifier">underflowException</span></a></a><span>      </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Exception.Type.html#toException"><span class="hs-identifier hs-var">toException</span></a><span> </span><a href="GHC.Exception.Type.html#Underflow"><span class="hs-identifier hs-var">Underflow</span></a><span>
+</span><a name="line-172"></a><span>
+</span><a name="line-173"></a><span class="hs-comment">-- | @since 4.0.0.0</span><span>
+</span><a name="line-174"></a><span class="hs-keyword">instance</span><span> </span><a href="GHC.Exception.Type.html#Exception"><span class="hs-identifier hs-type">Exception</span></a><span> </span><a href="GHC.Exception.Type.html#ArithException"><span class="hs-identifier hs-type">ArithException</span></a><span>
+</span><a name="line-175"></a><span>
+</span><a name="line-176"></a><span class="hs-comment">-- | @since 4.0.0.0</span><span>
+</span><a name="line-177"></a><span class="hs-keyword">instance</span><span> </span><a href="GHC.Show.html#Show"><span class="hs-identifier hs-type">Show</span></a><span> </span><a href="GHC.Exception.Type.html#ArithException"><span class="hs-identifier hs-type">ArithException</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-178"></a><span>  </span><a name="local-8214565720323809474"><a href="GHC.Show.html#showsPrec"><span class="hs-identifier">showsPrec</span></a></a><span> </span><span class="hs-identifier">_</span><span> </span><a href="GHC.Exception.Type.html#Overflow"><span class="hs-identifier hs-var">Overflow</span></a><span>        </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#showString"><span class="hs-identifier hs-var">showString</span></a><span> </span><span class="hs-string">&quot;arithmetic overflow&quot;</span><span>
+</span><a name="line-179"></a><span>  </span><span class="hs-identifier">showsPrec</span><span> </span><span class="hs-identifier">_</span><span> </span><a href="GHC.Exception.Type.html#Underflow"><span class="hs-identifier hs-var">Underflow</span></a><span>       </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#showString"><span class="hs-identifier hs-var">showString</span></a><span> </span><span class="hs-string">&quot;arithmetic underflow&quot;</span><span>
+</span><a name="line-180"></a><span>  </span><span class="hs-identifier">showsPrec</span><span> </span><span class="hs-identifier">_</span><span> </span><a href="GHC.Exception.Type.html#LossOfPrecision"><span class="hs-identifier hs-var">LossOfPrecision</span></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#showString"><span class="hs-identifier hs-var">showString</span></a><span> </span><span class="hs-string">&quot;loss of precision&quot;</span><span>
+</span><a name="line-181"></a><span>  </span><span class="hs-identifier">showsPrec</span><span> </span><span class="hs-identifier">_</span><span> </span><a href="GHC.Exception.Type.html#DivideByZero"><span class="hs-identifier hs-var">DivideByZero</span></a><span>    </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#showString"><span class="hs-identifier hs-var">showString</span></a><span> </span><span class="hs-string">&quot;divide by zero&quot;</span><span>
+</span><a name="line-182"></a><span>  </span><span class="hs-identifier">showsPrec</span><span> </span><span class="hs-identifier">_</span><span> </span><a href="GHC.Exception.Type.html#Denormal"><span class="hs-identifier hs-var">Denormal</span></a><span>        </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#showString"><span class="hs-identifier hs-var">showString</span></a><span> </span><span class="hs-string">&quot;denormal&quot;</span><span>
+</span><a name="line-183"></a><span>  </span><span class="hs-identifier">showsPrec</span><span> </span><span class="hs-identifier">_</span><span> </span><a href="GHC.Exception.Type.html#RatioZeroDenominator"><span class="hs-identifier hs-var">RatioZeroDenominator</span></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="GHC.Show.html#showString"><span class="hs-identifier hs-var">showString</span></a><span> </span><span class="hs-string">&quot;Ratio has zero denominator&quot;</span><span>
+</span><a name="line-184"></a></pre></body></html>
