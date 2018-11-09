@@ -10,7 +10,7 @@
 --   mutable within appropriate monads, as well as some instances of these
 --   classes.
 @package array
-@version 0.5.2.0
+@version 0.5.3.0
 
 
 -- | Basic non-strict arrays.
